@@ -9,7 +9,6 @@ const carSchema = new mongoose.Schema({
     carType: {
         type: String,
         required: true,
-        unique: true
     },
     modelNo: {
         type: String,
@@ -43,9 +42,9 @@ const carSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    description: {
+    otherDescription: {
         type: String,
-        required: true
+        // required: true
     },
     // images: [{
     //     type: String,

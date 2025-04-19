@@ -1,47 +1,137 @@
-const carDetails = require('../models/carModel')
+// const carDetails = require('../models/carModel');
+// const upload = require('../config/multer');
+// const fs = require('fs');
+
+// module.exports.submitCarDetails = async (req, res) => {
+//     try {
+//         // Process uploads first
+//         await new Promise((resolve, reject) => {
+//             upload(req, res, (err) => {
+//                 if (err) {
+//                     if (err.code === 'LIMIT_FILE_SIZE') {
+//                         return reject({ status: 400, error: 'File size too large (max 10MB)' });
+//                     }
+//                     if (err === 'Error: Images only!') {
+//                         return reject({ status: 400, error: 'Only images are allowed' });
+//                     }
+//                     return reject({ status: 400, error: err.message || 'File upload error' });
+//                 }
+//                 resolve();
+//             });
+//         });
+
+//         // Validate required fields
+//         const { 
+//             companyName, carType, modelNo, ownership, 
+//             fuelType, kmDriven, insuranceValidity, 
+//             carColor, price, tyrePercentage, otherDescription,
+//             imageTypes // Now coming from frontend
+//         } = req.body;
+
+//         const requiredFields = { 
+//             companyName, carType, modelNo, ownership, 
+//             fuelType, kmDriven, insuranceValidity, 
+//             carColor, price, tyrePercentage 
+//         };
+
+//         for (const [key, value] of Object.entries(requiredFields)) {
+//             if (!value || value.toString().trim() === "") {
+//                 // Cleanup uploaded files if validation fails
+//                 if (req.files?.length) {
+//                     req.files.forEach(file => fs.unlinkSync(file.path));
+//                 }
+//                 return res.status(400).json({ error: `${key} is required` });
+//             }
+//         }
+
+//         // Match files with their types
+//         const images = req.files.map((file, index) => ({
+//             file: file.path,
+//             imageType: JSON.parse(imageTypes)[index] // Parse array from string
+//         }));
+
+//         const car = await carDetails.create({
+//             companyName, 
+//             carType, 
+//             modelNo, 
+//             ownership, 
+//             fuelType, 
+//             kmDriven, 
+//             insuranceValidity, 
+//             carColor, 
+//             price, 
+//             tyrePercentage, 
+//             otherDescription,
+//             images // Now matches schema { file: String, imageType: String }
+//         });
+
+//         res.status(201).json({ success: true, data: car });
+
+//     } catch (error) {
+//         // Cleanup on error
+//         if (req.files?.length) {
+//             req.files.forEach(file => fs.unlinkSync(file.path));
+//         }
+//         res.status(error.status || 500).json({ 
+//             error: error.error || 'Something went wrong',
+//             details: error.message 
+//         });
+//     }
+// };
+const carDetails = require('../models/carModel');
 const upload = require('../config/multer');
+const fs = require('fs');
+const path = require('path');
 
-
-module.exports.submitCarDetails = (req,res) => {
-
-    console.log("incomming requesrt...........")
+module.exports.submitCarDetails = async (req, res) => {
     try {
-        upload(req, res, async (err) => {
-          if (err) {
-            if (err.code === 'LIMIT_FILE_SIZE') {
-              return res.status(400).json({ error: 'File size too large (max 10MB)' });
-            }
-            if (err === 'Error: Images only!') {
-              return res.status(400).json({ error: 'Only images are allowed' });
-            }
-            return res.status(400).json({ error: err.message || 'File upload error' });
-          }
-    
-          // Check if files were uploaded
-          if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ error: 'Please upload at least one image' });
-          }
-    
-          const { companyName, carType, modelNo, ownership, fuelType, kmDriven, insuranceValidity, carColor, price, tyrePercentage, description } = req.body;
-          
-          // Validate required fields
-          const requiredFields = { companyName, carType, modelNo, ownership, fuelType, kmDriven, insuranceValidity, carColor, price, tyrePercentage, description };
-          
-          for (const [key, value] of Object.entries(requiredFields)) {
+        // Process uploads first
+        await new Promise((resolve, reject) => {
+            upload(req, res, (err) => {
+                if (err) {
+                    if (err.code === 'LIMIT_FILE_SIZE') {
+                        return reject({ status: 400, error: 'File size too large (max 10MB)' });
+                    }
+                    if (err === 'Error: Images only!') {
+                        return reject({ status: 400, error: 'Only images are allowed' });
+                    }
+                    return reject({ status: 400, error: err.message || 'File upload error' });
+                }
+                resolve();
+            });
+        });
+
+        // Validate required fields
+        const { 
+            companyName, carType, modelNo, ownership, 
+            fuelType, kmDriven, insuranceValidity, 
+            carColor, price, tyrePercentage, otherDescription,
+            imageTypes
+        } = req.body;
+
+        const requiredFields = { 
+            companyName, carType, modelNo, ownership, 
+            fuelType, kmDriven, insuranceValidity, 
+            carColor, price, tyrePercentage 
+        };
+
+        for (const [key, value] of Object.entries(requiredFields)) {
             if (!value || value.toString().trim() === "") {
-              // Delete any uploaded files if validation fails
-              if (req.files && req.files.length > 0) {
-                req.files.forEach(file => {
-                  fs.unlinkSync(file.path);
-                });
-              }
-              return res.status(400).json({ error: `${key} is required` });
+                // Cleanup uploaded files if validation fails
+                if (req.files?.length) {
+                    req.files.forEach(file => fs.unlinkSync(file.path));
+                }
+                return res.status(400).json({ error: `${key} is required` });
             }
-          }
-    
-          const imagePaths = req.files.map(file => file.path);
-    
-          const car = await carDetails.create({
+        }
+
+        // Create image objects with public URLs
+        const images = req.files.map((file, index) => ({
+            file: `/uploads/${path.basename(file.path)}`, // Public URL path
+            imageType: JSON.parse(imageTypes)[index]
+        }));
+
+        const car = await carDetails.create({
             companyName, 
             carType, 
             modelNo, 
@@ -52,14 +142,30 @@ module.exports.submitCarDetails = (req,res) => {
             carColor, 
             price, 
             tyrePercentage, 
-            description,
-            images: imagePaths
-          });
-    
-          res.status(201).json({ success: true, data: car });
+            otherDescription,
+            images
+        });
+
+        // Convert to object and add full URLs for response
+        const carWithUrls = car.toObject();
+        carWithUrls.images = carWithUrls.images.map(img => ({
+            ...img,
+            url: `${req.protocol}://${req.get('host')}${img.file}`
+        }));
+
+        res.status(201).json({ 
+            success: true, 
+            data: carWithUrls 
+        });
+
+    } catch (error) {
+        // Cleanup on error
+        if (req.files?.length) {
+            req.files.forEach(file => fs.unlinkSync(file.path));
+        }
+        res.status(error.status || 500).json({ 
+            error: error.error || 'Something went wrong',
+            details: error.message 
         });
     }
-    catch(error){
-        res.status(500).json({ error: 'Something went wrong', details: err.message });
-    }
-}
+};
