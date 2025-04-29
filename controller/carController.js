@@ -167,7 +167,7 @@ module.exports.getCarsByCompany = async (req, res) => {
 module.exports.addCarAndCompnay = async (req,res) => {
         try {
             // 1. Extract data from request
-            const { companyName, carName, fuelType, description } = req.body;
+            const { companyName, carName, fuelType, description,vehicleType } = req.body;
             const companyLogo = req.files['companyLogo'][0];
             const carImage = req.files['carImage'][0];
     
@@ -187,6 +187,7 @@ module.exports.addCarAndCompnay = async (req,res) => {
                 name: carName,
                 image: carImage.filename,
                 fuelType,
+                vehicleType,
                 description,
                 companyName, // reference to company
                 createdAt: new Date()

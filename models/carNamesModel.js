@@ -18,6 +18,12 @@ const carNamesSchema = new mongoose.Schema({
     type: String,
     enum: ['Sedan', 'SUV', 'Hatchback', 'Coupe', 'Convertible', 'Truck']
   },
+  fuelType: {
+    type: String
+  },
+  description : {
+    type:String
+  }
 });
 
 module.exports = mongoose.model('car_names', carNamesSchema);
