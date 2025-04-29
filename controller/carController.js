@@ -1,16 +1,17 @@
 const mongoose = require('mongoose')
-const carDetails = require('../models/carModel');
+const adminUploads = require('../models/carModel');
 const Company = require('../models/carCompanyModel')
 const CarName = require('../models/carNamesModel')
-const upload = require('../config/multer');
+const { adminImagesUploads, uploadCompanyCar } = require('../config/multer');
 const fs = require('fs');
 const path = require('path');
+
 
 module.exports.submitCarDetails = async (req, res) => {
     try {
         // Process uploads first
         await new Promise((resolve, reject) => {
-            upload(req, res, (err) => {
+            adminImagesUploads(req, res, (err) => {
                 if (err) {
                     if (err.code === 'LIMIT_FILE_SIZE') {
                         return reject({ status: 400, error: 'File size too large (max 10MB)' });
@@ -50,11 +51,11 @@ module.exports.submitCarDetails = async (req, res) => {
 
         // Create image objects with public URLs
         const images = req.files.map((file, index) => ({
-            file: `/uploads/${path.basename(file.path)}`, // Public URL path
+            file: `/uploads/adminUploads/${path.basename(file.path)}`, // Public URL path
             imageType: JSON.parse(imageTypes)[index]
         }));
 
-        const car = await carDetails.create({
+        const car = await adminUploads.create({
             companyName,
             carType,
             modelNo,
@@ -163,8 +164,74 @@ module.exports.getCarsByCompany = async (req, res) => {
 
 
 
-
-
+module.exports.addCarAndCompnay = async (req,res) => {
+        try {
+            // 1. Extract data from request
+            const { companyName, carName, fuelType, description } = req.body;
+            const companyLogo = req.files['companyLogo'][0];
+            const carImage = req.files['carImage'][0];
+    
+            // 2. Validate required fields
+            if (!companyName || !carName || !fuelType || !description) {
+                return res.status(400).json({ error: 'All fields are required' });
+            }
+    
+            // 3. Create data objects for each collection
+            const companyData = {
+                name: companyName,
+                logo: companyLogo.filename, // or the full path if needed
+                createdAt: new Date()
+            };
+    
+            const carData = {
+                name: carName,
+                image: carImage.filename,
+                fuelType,
+                description,
+                companyName, // reference to company
+                createdAt: new Date()
+            };
+    
+            // 4. Save to databases - using Mongoose as example
+            // Start a transaction if your DB supports it
+            const session = await mongoose.startSession();
+            session.startTransaction();
+    
+            try {
+                // Save to Company collection
+                const newCompany = await CompanyModel.create([companyData], { session });
+                
+                // Save to Car collection
+                const newCar = await CarModel.create([carData], { session });
+    
+                // Commit the transaction
+                await session.commitTransaction();
+                session.endSession();
+    
+                // 5. Send success response
+                res.status(201).json({
+                    success: true,
+                    company: newCompany[0],
+                    car: newCar[0],
+                    message: 'Data saved successfully to both collections'
+                });
+    
+            } catch (dbError) {
+                // If any error occurs, abort the transaction
+                await session.abortTransaction();
+                session.endSession();
+                throw dbError; // this will be caught by the outer catch
+            }
+    
+        } catch (error) {
+            console.error('Error in company-car upload:', error);
+            res.status(500).json({ 
+                success: false,
+                error: 'Server error during data processing',
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+}
 
 
 

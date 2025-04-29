@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 
-const carSchema = new mongoose.Schema({
+const adminUploads = new mongoose.Schema({
     companyName: {
         type: String,
         required: true
@@ -60,4 +60,4 @@ const carSchema = new mongoose.Schema({
     }
 })
 
-module.exports = mongoose.model('carDetails', carSchema)
+module.exports = mongoose.model('admin_uploads', adminUploads)
